@@ -1,6 +1,6 @@
 services:
 
-  app:
+  aes_tc_app:
     build: .
     restart: unless-stopped
     environment:
@@ -13,7 +13,7 @@ services:
     expose:
       - "8000"
 
-  nginx:
+  aes_tc_nginx:
     image: nginx:alpine
     restart: unless-stopped
     depends_on:
