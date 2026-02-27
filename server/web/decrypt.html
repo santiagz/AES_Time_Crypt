@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimeLock — Decrypt</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #fffef0;
+    --yellow: #ffe400;
+    --red: #ff3b3b;
+    --green: #00e676;
+    --blue: #1a1aff;
+    --border: 3px solid var(--black);
+    --shadow: 5px 5px 0 var(--black);
+    --shadow-lg: 8px 8px 0 var(--black);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--white);
+    color: var(--black);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Header — red accent for decrypt ────── */
+  header {
+    background: var(--black);
+    border-bottom: var(--border);
+    padding: 0 40px;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .header-lock {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 6vw, 72px);
+    line-height: 1;
+    padding: 18px 28px 18px 0;
+    border-right: 3px solid #333;
+    margin-right: 28px;
+    letter-spacing: 2px;
+    color: var(--green);
+  }
+
+  .header-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(30px, 4vw, 48px);
+    letter-spacing: 3px;
+    line-height: 1;
+    color: var(--white);
+  }
+
+  .header-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #888;
+    text-transform: uppercase;
+  }
+
+  .header-badge {
+    margin-left: auto;
+    align-self: center;
+    background: var(--green);
+    color: var(--black);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border: 2px solid var(--green);
+  }
+
+  /* ── Layout ─────────────────────────────── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── Section header ─────────────────────── */
+  .section-tag {
+    display: inline-block;
+    background: var(--black);
+    color: var(--green);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    margin-bottom: 16px;
+  }
+
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 4vw, 44px);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+
+  p {
+    font-size: 15px;
+    line-height: 1.65;
+    color: #2a2a2a;
+  }
+
+  /* ── Cards ──────────────────────────────── */
+  .card {
+    border: var(--border);
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 28px;
+    background: var(--white);
+  }
+
+  .card-header {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-header .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+
+  .card-body { padding: 22px 22px 24px; }
+
+  /* ── Code blocks ─────────────────────────── */
+  .code-block {
+    background: var(--black);
+    color: var(--green);
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 18px 20px;
+    border: var(--border);
+    box-shadow: var(--shadow);
+    margin: 12px 0;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .code-block .prompt { color: #555; user-select: none; }
+  .code-block .cmd    { color: var(--green); }
+  .code-block .arg    { color: #b8e0ff; }
+  .code-block .flag   { color: #ff9d4d; }
+  .code-block .hl     { color: var(--yellow); font-weight: bold; }
+  .code-block .err    { color: var(--red); }
+  .code-block .comment { color: #444; font-size: 12px; }
+
+  .copy-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: #222;
+    color: #666;
+    border: 1px solid #444;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.1s;
+  }
+
+  .copy-btn:hover { background: var(--green); color: var(--black); border-color: var(--green); }
+  .copy-btn.copied { background: #10b981; color: white; border-color: #10b981; }
+
+  /* ── Error response example ─────────────── */
+  .response-block {
+    border: var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin: 12px 0;
+  }
+
+  .response-block .r-header {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .response-block.locked .r-header { background: #fff3cd; color: #856404; }
+  .response-block.success .r-header { background: #d4edda; color: #155724; }
+
+  .response-block .r-body {
+    background: var(--black);
+    color: #e2e8f0;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 16px 18px;
+  }
+
+  /* ── Steps ──────────────────────────────── */
+  .steps {
+    counter-reset: step;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .steps li {
+    counter-increment: step;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .steps li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--green);
+    background: var(--black);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 1px;
+  }
+
+  .steps li span { padding-top: 6px; color: #2a2a2a; }
+  .steps li code {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    background: #f0f0dc;
+    border: 1px solid #ccc;
+    padding: 1px 5px;
+  }
+
+  /* ── Banner ─────────────────────────────── */
+  .banner {
+    border: var(--border);
+    box-shadow: var(--shadow);
+    padding: 14px 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+
+  .banner.locked { background: #fff3cd; }
+  .banner.info   { background: #d0f0ff; }
+
+  .banner-icon { font-size: 22px; flex-shrink: 0; line-height: 1.4; }
+  .banner p { font-size: 13px; font-weight: 500; }
+
+  hr.divider {
+    border: none;
+    border-top: 2px solid var(--black);
+    margin: 36px 0;
+  }
+
+  /* ── HTTP status badge ───────────────────── */
+  .http-badge {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border: 2px solid var(--black);
+    margin-right: 8px;
+  }
+
+  .http-badge.s200 { background: var(--green); }
+  .http-badge.s423 { background: var(--yellow); }
+  .http-badge.s404 { background: var(--red); color: white; }
+
+  /* ── Footer ─────────────────────────────── */
+  footer {
+    border-top: var(--border);
+    background: var(--black);
+    color: var(--white);
+    padding: 18px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  footer a { color: var(--green); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 600px) {
+    header { padding: 0 16px; }
+    main { padding: 28px 16px 60px; }
+    footer { flex-direction: column; gap: 8px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-lock">🔓</div>
+  <div class="header-text">
+    <div class="header-title">TimeLock Vault</div>
+    <div class="header-sub">de.yourdomain.com — Decrypt Endpoint</div>
+  </div>
+  <div class="header-badge">KEY RELEASE</div>
+</header>
+
+<main>
+
+  <!-- BANNER -->
+  <div class="banner locked">
+    <div class="banner-icon">🔑</div>
+    <p>Send your <strong>.tlp file</strong> here. If the unlock date has passed, the server releases the key and returns your original file. If not — you get a <strong>countdown</strong> and an HTTP <code style="font-size:12px;background:rgba(0,0,0,0.08);padding:1px 4px">423 Locked</code> response.</p>
+  </div>
+
+  <!-- CURL -->
+  <div class="section-tag">curl — quickest way</div>
+  <h2>Decrypt with curl</h2>
+  <p style="margin-bottom:16px">Post your <code style="font-family:'Space Mono',monospace;font-size:12px;background:#f0f0dc;border:1px solid #ccc;padding:1px 5px">.tlp</code> file. The response is either your original file, or a JSON error with a countdown.</p>
+
+  <div class="card">
+    <div class="card-header"><div class="dot"></div>Basic decrypt</div>
+    <div class="card-body">
+      <div class="code-block" id="curl1">
+        <button class="copy-btn" onclick="copyCode('curl1')">copy</button>
+        <span class="prompt">$ </span><span class="cmd">curl</span> <span class="flag">-T</span> <span class="arg">file.txt.tlp</span> <span class="arg">https://de.yourdomain.com</span> <span class="flag">-o</span> <span class="arg">file.txt</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="dot"></div>With status code check (recommended)</div>
+    <div class="card-body">
+      <div class="code-block" id="curl2">
+        <button class="copy-btn" onclick="copyCode('curl2')">copy</button>
+        <span class="prompt">$ </span><span class="cmd">curl</span> <span class="flag">-T</span> <span class="arg">file.txt.tlp</span> <span class="arg">https://de.yourdomain.com</span> <span class="flag">-o</span> <span class="arg">file.txt</span> <span class="flag">-w "\nHTTP %{http_code}\n"</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- RESPONSE EXAMPLES -->
+  <div class="section-tag">server responses</div>
+  <h2>What the server returns</h2>
+
+  <div style="margin-top:16px">
+    <p style="margin-bottom:10px"><span class="http-badge s200">200 OK</span> — Unlock date has passed. Server returns original file bytes.</p>
+    <div class="response-block success">
+      <div class="r-header"><span>Response: raw file bytes</span><span>Content-Disposition: attachment; filename="file.txt"</span></div>
+      <div class="r-body">&lt;binary file contents saved directly to disk&gt;</div>
+    </div>
+
+    <p style="margin: 20px 0 10px"><span class="http-badge s423">423 LOCKED</span> — File is still locked. Returns JSON countdown.</p>
+    <div class="response-block locked">
+      <div class="r-header"><span>Response: application/json</span><span>HTTP 423</span></div>
+      <div class="r-body">{<br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"error"</span>:            <span style="color:#fde68a">"🔒 Locked"</span>,<br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"message"</span>:          <span style="color:#fde68a">"This file unlocks in <span class="hl">47d 3h 22m</span>"</span>,<br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"unlock_iso"</span>:       <span style="color:#fde68a">"2026-03-15T00:00:00+00:00"</span>,<br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"remaining_seconds"</span>: <span style="color:#86efac">4079340</span>,<br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"remaining_human"</span>:   <span style="color:#fde68a">"47d 3h 22m"</span><br>
+}</div>
+    </div>
+
+    <p style="margin: 20px 0 10px"><span class="http-badge s404">404 NOT FOUND</span> — Key ID not found. Server may have been reset, or key never existed.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- CLI -->
+  <div class="section-tag">Python CLI — for power users</div>
+  <h2>Decrypt with dec.py</h2>
+  <p style="margin-bottom:16px">Download <code style="font-family:'Space Mono',monospace;font-size:12px;background:#f0f0dc;border:1px solid #ccc;padding:1px 5px">dec.py</code> from the repo. No dependencies — pure Python stdlib.</p>
+
+  <div class="card">
+    <div class="card-header"><div class="dot"></div>CLI syntax</div>
+    <div class="card-body">
+      <div class="code-block" id="cli1">
+        <button class="copy-btn" onclick="copyCode('cli1')">copy</button>
+        <span class="comment"># python dec.py &lt;file.tlp&gt; [--output PATH] [--server URL]</span><br><br>
+        <span class="prompt">$ </span><span class="cmd">python</span> <span class="arg">dec.py</span> <span class="arg">file.txt.tlp</span>
+        <span class="comment">                       # saves as file.txt</span><br>
+        <span class="prompt">$ </span><span class="cmd">python</span> <span class="arg">dec.py</span> <span class="arg">file.txt.tlp</span> <span class="flag">--output</span> <span class="arg">/tmp/result.txt</span><br>
+        <span class="prompt">$ </span><span class="cmd">python</span> <span class="arg">dec.py</span> <span class="arg">file.txt.tlp</span> <span class="flag">--server</span> <span class="arg">https://de.yourdomain.com</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="dot"></div>Terminal output examples</div>
+    <div class="card-body">
+      <p style="font-size:12px;opacity:0.7;margin-bottom:8px">When file is locked:</p>
+      <div class="code-block" style="font-size:12px;margin:0 0 14px">
+        &nbsp;&nbsp;file       →  file.txt.tlp<br>
+        &nbsp;&nbsp;unlocks at →  2026-03-15 00:00 UTC<br>
+        &nbsp;&nbsp;server     →  https://de.yourdomain.com<br><br>
+        <span class="err">✗  🔒 Locked</span><br>
+        <span class="err">&nbsp;&nbsp; This file unlocks in 47d 3h 22m</span><br>
+        <span class="err">&nbsp;&nbsp; Unlocks: 2026-03-15T00:00:00+00:00</span>
+      </div>
+
+      <p style="font-size:12px;opacity:0.7;margin-bottom:8px">When file is unlocked:</p>
+      <div class="code-block" style="font-size:12px;margin:0">
+        &nbsp;&nbsp;file       →  file.txt.tlp<br>
+        &nbsp;&nbsp;unlocks at →  2026-02-27 12:00 UTC<br>
+        &nbsp;&nbsp;server     →  https://de.yourdomain.com<br><br>
+        <span class="cmd">✓  Decrypted  →  file.txt</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- HOW IT WORKS -->
+  <div class="section-tag">Under the hood</div>
+  <h2>How decryption works</h2>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-header"><div class="dot"></div>Step by step</div>
+    <div class="card-body">
+      <ol class="steps">
+        <li><span>Your <code>.tlp</code> file is sent to this server. It contains a <code>key_id</code> and the ciphertext</span></li>
+        <li><span>Server verifies the <code>_sig</code> integrity field — rejects tampered files</span></li>
+        <li><span>Server checks current time against <code>unlock_at</code> timestamp</span></li>
+        <li><span>If locked → returns <code>HTTP 423</code> with countdown JSON. Request ends here</span></li>
+        <li><span>If unlocked → server looks up the AES-256 key by <code>key_id</code> from the vault</span></li>
+        <li><span>Ciphertext is decrypted using <code>AES-256-GCM</code> → original file bytes returned</span></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="banner info">
+    <div class="banner-icon">⚠️</div>
+    <p><strong>Key persistence:</strong> Keys are stored indefinitely. If you self-host this server, ensure your <code style="font-size:12px;background:rgba(0,0,0,0.08);padding:1px 4px">vault.db</code> is not deleted before your files need to be unlocked.</p>
+  </div>
+
+</main>
+
+<footer>
+  <span>TimeLock Vault — de.yourdomain.com</span>
+  <span>→ <a href="https://en.yourdomain.com">en.yourdomain.com</a> to encrypt</span>
+</footer>
+
+<script>
+function copyCode(id) {
+  const block = document.getElementById(id);
+  const text = block.innerText.replace(/^copy\n/, '').replace(/\$ /g, '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = block.querySelector('.copy-btn');
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
