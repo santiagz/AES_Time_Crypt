@@ -1,12 +1,17 @@
 """
 TimeLock Vault — Server (FastAPI)
 ==================================
-PUT /<duration>   encrypt — body=raw file bytes, header X-Filename: name.txt
-PUT /decrypt      decrypt — body=.tlp JSON blob
-GET /health       → {"ok": true}
-GET /docs         → Swagger UI
+GET  /en              → encrypt instruction page
+PUT  /en              → encrypt (default: 1month)
+PUT  /en/1year        → encrypt with duration
+PUT  /en/1year/f.txt  → encrypt (curl -T appends filename to URL)
 
-Duration tokens: 1h 2h 6h 12h 1d 3d 1week 2weeks 1month 3months 6months 1year
+GET  /de              → decrypt instruction page
+PUT  /de              → decrypt
+PUT  /de/f.txt.tlp    → decrypt (curl -T appends filename to URL)
+
+GET  /health          → {"ok": true}
+GET  /docs            → Swagger UI
 """
 
 import base64
@@ -17,17 +22,20 @@ import secrets
 import sqlite3
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import FastAPI, Header, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-DB_PATH   = os.environ.get("DB_PATH", "vault.db")
-MAX_BYTES = int(os.environ.get("MAX_MB", "100")) * 1024 * 1024
-SECRET    = os.environ.get("SERVER_SECRET", secrets.token_hex(32))
+DB_PATH      = os.environ.get("DB_PATH",   "vault.db")
+MAX_BYTES    = int(os.environ.get("MAX_MB", "100")) * 1024 * 1024
+SECRET       = os.environ.get("SERVER_SECRET", secrets.token_hex(32))
+STATIC_DIR   = Path(os.environ.get("STATIC_DIR", "/var/www"))
+DEFAULT_DUR  = "1month"
 
 DURATIONS: dict[str, int] = {
     "1h":       3_600,
@@ -68,8 +76,8 @@ def init_db() -> None:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def fmt_countdown(seconds_left: float) -> str:
-    s = int(seconds_left)
+def fmt_countdown(s: float) -> str:
+    s = int(s)
     parts = []
     if s // 86400:          parts.append(f"{s // 86400}d")
     if (s % 86400) // 3600: parts.append(f"{(s % 86400) // 3600}h")
@@ -80,6 +88,37 @@ def fmt_countdown(seconds_left: float) -> str:
 def sign(payload: dict) -> str:
     msg = f"{payload['id']}:{payload['unlock_at']}".encode()
     return hashlib.sha256(SECRET.encode() + msg).hexdigest()[:32]
+
+def static(filename: str) -> HTMLResponse:
+    """Serve a static HTML file, with inline fallback if dir not mounted."""
+    p = STATIC_DIR / filename
+    if p.exists():
+        return HTMLResponse(p.read_text())
+    return HTMLResponse(f"<h1>{filename} not found</h1>", status_code=404)
+
+def resolve_enc_path(raw_path: str, header_filename: str) -> tuple[str, str]:
+    """
+    Parse the URL path suffix and return (duration, filename).
+
+    curl -T sends:  PUT /en/file.txt        → path="file.txt"
+    custom dur:     PUT /en/1year           → path="1year"
+    both:           PUT /en/1year/file.txt  → path="1year/file.txt"
+    """
+    segments = raw_path.strip("/").split("/", 1) if raw_path.strip("/") else []
+
+    if not segments:
+        return DEFAULT_DUR, header_filename or "file"
+
+    first = segments[0].lower()
+    if first in DURATIONS:
+        duration = first
+        filename = segments[1] if len(segments) > 1 else (header_filename or "file")
+    else:
+        # Not a duration — curl appended the filename, use default duration
+        duration = DEFAULT_DUR
+        filename = header_filename or segments[0]
+
+    return duration, filename or "file"
 
 # ── App ───────────────────────────────────────────────────────────────────────
 
@@ -100,18 +139,36 @@ init_db()
 def health():
     return {"ok": True, "ts": int(time.time())}
 
-
-@app.put("/{path}")
-async def router(path: str, request: Request, x_filename: str = Header(default="file")):
-    """Single PUT handler — routes to encrypt or decrypt based on path."""
-    if path == "decrypt":
-        return await _decrypt(request)
-    return await _encrypt(path, request, x_filename)
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    p = STATIC_DIR / "favicon.ico"
+    return FileResponse(p) if p.exists() else Response(status_code=204)
 
 
-# ── Encrypt ───────────────────────────────────────────────────────────────────
+@app.get("/", include_in_schema=False)
+def index():
+    return static("index.html")
 
-async def _encrypt(duration: str, request: Request, filename: str) -> Response:
+# ── /en  ──────────────────────────────────────────────────────────────────────
+
+@app.put("/en", summary="Encrypt file (default: 1month)")
+@app.put("/en/{path:path}", summary="Encrypt file with duration")
+async def enc_route(request: Request, path: str = "", x_filename: str = Header(default="")):
+    duration, filename = resolve_enc_path(path, x_filename)
+    return await _encrypt(duration, filename, request)
+
+
+# ── /de  ──────────────────────────────────────────────────────────────────────
+
+@app.put("/de", summary="Decrypt .tlp file")
+@app.put("/de/{path:path}", include_in_schema=False)   # absorbs curl -T filename
+async def dec_route(request: Request, path: str = ""):
+    return await _decrypt(request)
+
+
+# ── Encrypt logic ─────────────────────────────────────────────────────────────
+
+async def _encrypt(duration: str, filename: str, request: Request) -> Response:
     raw = await request.body()
     if not raw:
         return JSONResponse({"error": "No file data in request body"}, status_code=400)
@@ -122,7 +179,7 @@ async def _encrypt(duration: str, request: Request, filename: str) -> Response:
     if secs is None:
         return JSONResponse(
             {"error": f"Unknown duration '{duration}'. Valid: {', '.join(DURATIONS)}"},
-            status_code=400
+            status_code=400,
         )
 
     unlock_at  = int(time.time()) + secs
@@ -158,7 +215,7 @@ async def _encrypt(duration: str, request: Request, filename: str) -> Response:
     )
 
 
-# ── Decrypt ───────────────────────────────────────────────────────────────────
+# ── Decrypt logic ─────────────────────────────────────────────────────────────
 
 async def _decrypt(request: Request) -> Response:
     raw = await request.body()
