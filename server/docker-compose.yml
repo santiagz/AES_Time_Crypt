@@ -1,7 +1,7 @@
 services:
 
   app:
-    build: ./server
+    build: .
     restart: unless-stopped
     environment:
       SERVER_SECRET: ${SERVER_SECRET:?set SERVER_SECRET in .env}
@@ -19,8 +19,7 @@ services:
     depends_on:
       - app
     ports:
-      - "80:80"
-      - "443:443"
+      - "8065:80"
     volumes:
       - ./web/nginx.conf:/etc/web/conf.d/default.conf:ro
       - ./web:/var/www/timelock:ro
