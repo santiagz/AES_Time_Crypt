@@ -363,7 +363,7 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════ -->
-<!--  ENCRYPT PANEL                                            -->
+<!--  ENCRYPT PANEL                                             -->
 <!-- ══════════════════════════════════════════════════════════ -->
 <div class="panel active" id="panel-enc">
 <main>
@@ -383,7 +383,7 @@
     <div class="card-bd">
       <div class="code code-enc" id="c1">
         <button class="copy-btn" onclick="cp('c1')">copy</button>
-        <span class="cp">$ </span>curl -T <span class="ca">file.txt</span> <span class="ca">https://t.yourdomain.com/en</span> -o <span class="ca">file.txt.tlp</span>
+        <span class="cp">$ </span>curl -T <span class="ca">file.txt</span> <span class="ca">t.yourdomain.com/en</span> -o <span class="ca">file.txt.tlp</span>
       </div>
     </div>
   </div>
@@ -393,7 +393,7 @@
     <div class="card-bd">
       <div class="code code-enc" id="c2">
         <button class="copy-btn" onclick="cp('c2')">copy</button>
-        <span class="cp">$ </span>curl -T <span class="ca">secrets.pdf</span> <span class="ca">https://t.yourdomain.com/en/<span class="hl">1year</span></span> -o <span class="ca">secrets.pdf.tlp</span>
+        <span class="cp">$ </span>curl -T <span class="ca">secrets.pdf</span> <span class="ca">t.yourdomain.com/en/<span class="hl">1year</span></span> -o <span class="ca">secrets.pdf.tlp</span>
       </div>
     </div>
   </div>
@@ -507,7 +507,7 @@
     <div class="card-bd">
       <div class="code code-dec" id="d1">
         <button class="copy-btn" onclick="cp('d1')">copy</button>
-        <span class="cp">$ </span>curl -T <span class="ca">file.txt.tlp</span> <span class="ca">https://t.yourdomain.com/de</span> -o <span class="ca">file.txt</span>
+        <span class="cp">$ </span>curl -T <span class="ca">file.txt.tlp</span> <span class="ca">t.yourdomain.com/de</span> -o <span class="ca">file.txt</span>
       </div>
     </div>
   </div>
@@ -517,7 +517,7 @@
     <div class="card-bd">
       <div class="code code-dec" id="d2">
         <button class="copy-btn" onclick="cp('d2')">copy</button>
-        <span class="cp">$ </span>curl -T <span class="ca">file.txt.tlp</span> <span class="ca">https://t.yourdomain.com/de</span> -o <span class="ca">file.txt</span> -w <span class="cf">"\nHTTP %{http_code}\n"</span>
+        <span class="cp">$ </span>curl -T <span class="ca">file.txt.tlp</span> <span class="ca">t.yourdomain.com/de</span> -o <span class="ca">file.txt</span> -w <span class="cf">"\nHTTP %{http_code}\n"</span>
       </div>
     </div>
   </div>
@@ -649,7 +649,7 @@
   // ── Copy buttons ─────────────────────────────────────────────
   function cp(id) {
     const block = document.getElementById(id);
-    const text  = block.innerText.replace(/^copy\n/, '').replace(/^\$ /gm, '').trim();
+    const text  = block.innerText.replace(/^COPY\n/, '').replace(/^\$ /gm, '').trim();
     navigator.clipboard.writeText(text).then(() => {
       const btn = block.querySelector('.copy-btn');
       btn.textContent = 'copied!';
