@@ -55,16 +55,27 @@ python dec.py file.txt.tlp --server https://de.yourdomain.com
 
 ### 1. Clone & configure
 
-Edit `.env` - set a long random `SERVER_SECRET`
+Edit `.env` - set a long random `SERVER_SECRET`:
 ```bash
 cp .env.example .env
 ```
 
-Edit server name
+Edit server name in `nginx.conf`:
 ```nginx
 server_name en.yourdomain.com;
+
 ...
+
 server_name de.yourdomain.com;
+```
+
+Edit html files `enctypt.html` and `dectypt.html`
+
+Ctrl+F in files for `yourdomain.com` and replace to your FQDN
+
+Example:
+```html
+<span>TimeLock Vault — de.yourdomain.com</span>
 ```
 
 ### 2. Point your DNS
