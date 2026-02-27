@@ -6,10 +6,12 @@ services:
     environment:
       SERVER_SECRET: ${SERVER_SECRET:?set SERVER_SECRET in .env}
       DB_PATH: /data/vault.db
+      STATIC_DIR: /var/www
       MAX_MB: 100
       PORT: 8000
     volumes:
       - vault_data:/data
+      - ./web:/var/www:ro
     expose:
       - "8000"
 
