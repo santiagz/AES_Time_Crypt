@@ -21,7 +21,7 @@ services:
     ports:
       - "8065:80"
     volumes:
-      - ./web/nginx.conf:/etc/web/conf.d/default.conf:ro
+      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./web:/var/www:ro
 
 volumes:
