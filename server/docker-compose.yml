@@ -1,0 +1,29 @@
+services:
+
+  app:
+    build: ./server
+    restart: unless-stopped
+    environment:
+      SERVER_SECRET: ${SERVER_SECRET:?set SERVER_SECRET in .env}
+      DB_PATH: /data/vault.db
+      MAX_MB: 100
+      PORT: 8000
+    volumes:
+      - vault_data:/data
+    expose:
+      - "8000"
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./web/nginx.conf:/etc/web/conf.d/default.conf:ro
+      - ./web:/var/www/timelock:ro
+
+volumes:
+  vault_data:
