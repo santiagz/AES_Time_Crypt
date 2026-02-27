@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimeLock Vault</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="shortcut icon" href="/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black:     #0a0a0a;
+    --white:     #fffef0;
+    --yellow:    #ffe400;
+    --green:     #00e676;
+    --red:       #ff3b3b;
+    --border:    3px solid var(--black);
+    --shadow:    5px 5px 0 var(--black);
+    --shadow-lg: 8px 8px 0 var(--black);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--white);
+    color: var(--black);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Header ─────────────────────────────────────────────── */
+  header {
+    background: var(--black);
+    border-bottom: var(--border);
+    padding: 0 40px;
+    display: flex;
+    align-items: stretch;
+  }
+
+  .h-icon {
+    font-size: clamp(40px, 5vw, 60px);
+    line-height: 1;
+    padding: 16px 24px 16px 0;
+    border-right: 3px solid #222;
+    margin-right: 24px;
+    color: var(--yellow);
+    font-family: 'Bebas Neue', sans-serif;
+  }
+
+  .h-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  .h-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(26px, 3.5vw, 42px);
+    letter-spacing: 3px;
+    color: var(--white);
+    line-height: 1;
+  }
+
+  .h-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #555;
+    text-transform: uppercase;
+  }
+
+  .h-right {
+    margin-left: auto;
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .repo-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--yellow);
+    color: var(--black);
+    border: 2px solid var(--yellow);
+    box-shadow: 4px 4px 0 var(--yellow);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-decoration: none;
+    padding: 5px 12px;
+    transition: transform .1s, box-shadow .1s;
+  }
+  .repo-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--yellow); }
+
+  .authors {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: #555;
+  }
+  .authors a {
+    color: var(--white);
+    font-weight: 700;
+    text-decoration: none;
+    border-bottom: 2px solid var(--yellow);
+  }
+  .authors a:hover { color: var(--yellow); }
+
+  /* ── Tabs ────────────────────────────────────────────────── */
+  .tabs {
+    display: flex;
+    border-bottom: var(--border);
+    background: var(--black);
+  }
+
+  .tab {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 3px;
+    padding: 14px 36px;
+    cursor: pointer;
+    color: #555;
+    border-right: var(--border);
+    border-bottom: 3px solid transparent;
+    transition: color .15s, background .15s;
+    user-select: none;
+  }
+
+  .tab:hover { color: var(--white); background: #111; }
+
+  .tab.active-enc {
+    color: var(--black);
+    background: var(--yellow);
+    border-bottom-color: var(--yellow);
+  }
+
+  .tab.active-dec {
+    color: var(--black);
+    background: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  /* ── Tab panels ──────────────────────────────────────────── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Layout ──────────────────────────────────────────────── */
+  main { max-width: 900px; margin: 0 auto; padding: 44px 24px 80px; }
+
+  /* ── Section tag ─────────────────────────────────────────── */
+  .tag {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    margin-bottom: 14px;
+  }
+  .tag-enc { background: var(--black); color: var(--yellow); }
+  .tag-dec { background: var(--black); color: var(--green); }
+
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(26px, 3.5vw, 40px);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+
+  p { font-size: 14px; line-height: 1.65; color: #2a2a2a; }
+
+  /* ── Card ────────────────────────────────────────────────── */
+  .card {
+    border: var(--border);
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 24px;
+    background: var(--white);
+  }
+
+  .card-hd {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-hd .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-enc { background: var(--yellow); }
+  .dot-dec { background: var(--green); }
+
+  .card-bd { padding: 18px 20px 20px; }
+
+  /* ── Code block ──────────────────────────────────────────── */
+  .code {
+    position: relative;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    line-height: 1.75;
+    padding: 16px 18px;
+    border: var(--border);
+    box-shadow: var(--shadow);
+    margin: 10px 0;
+    overflow-x: auto;
+  }
+  .code-enc { background: var(--black); color: var(--yellow); }
+  .code-dec { background: var(--black); color: var(--green); }
+
+  .cp { color: #888; user-select: none; }
+  .ca { color: #b8e0ff; }
+  .cf { color: #ff9d4d; }
+  .cm { color: #555; font-size: 11px; }
+  .hl { color: var(--yellow); font-weight: bold; }
+  .hl-g { color: var(--green); font-weight: bold; }
+  .er { color: var(--red); }
+
+  .copy-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: #1a1a1a;
+    color: #666;
+    border: 1px solid #333;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 3px 7px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all .1s;
+  }
+  .copy-btn:hover { background: var(--yellow); color: var(--black); border-color: var(--yellow); }
+  .copy-btn.ok    { background: #10b981; color: white; border-color: #10b981; }
+
+  /* ── Duration grid ───────────────────────────────────────── */
+  .dur-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .dur-chip {
+    border: 2px solid var(--black);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    padding: 7px 4px;
+    box-shadow: 3px 3px 0 var(--black);
+    cursor: default;
+    transition: transform .1s, box-shadow .1s;
+  }
+  .dur-chip:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--black); }
+  .dur-chip.star  { background: var(--yellow); }
+
+  /* ── Steps ───────────────────────────────────────────────── */
+  .steps { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 10px; counter-reset: s; }
+  .steps li { counter-increment: s; display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.6; }
+  .steps li::before {
+    content: counter(s, decimal-leading-zero);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: var(--black);
+  }
+  .steps li span { padding-top: 5px; color: #2a2a2a; }
+  .steps li code { font-family: 'Space Mono', monospace; font-size: 11px; background: #f0f0dc; border: 1px solid #ccc; padding: 1px 4px; }
+  .steps-enc li::before { color: var(--yellow); }
+  .steps-dec li::before { color: var(--green); }
+
+  /* ── Banner ──────────────────────────────────────────────── */
+  .banner {
+    border: var(--border);
+    box-shadow: var(--shadow);
+    padding: 12px 16px;
+    display: flex; gap: 12px; align-items: flex-start;
+    margin-bottom: 24px;
+  }
+  .banner p { font-size: 13px; font-weight: 500; }
+  .banner-icon { font-size: 20px; flex-shrink: 0; line-height: 1.4; }
+  .b-warn { background: #fff3cd; }
+  .b-info { background: #d0f0ff; }
+
+  /* ── Response blocks ─────────────────────────────────────── */
+  .resp { border: var(--border); box-shadow: var(--shadow); overflow: hidden; margin: 10px 0; }
+  .resp-hd { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 5px 12px; display: flex; justify-content: space-between; }
+  .resp-hd.s200 { background: #d4edda; color: #155724; }
+  .resp-hd.s423 { background: #fff3cd; color: #856404; }
+  .resp-body { background: var(--black); color: #e2e8f0; font-family: 'Space Mono', monospace; font-size: 11px; line-height: 1.7; padding: 14px 16px; }
+
+  .http { display: inline-block; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border: 2px solid var(--black); margin-right: 7px; }
+  .s200 { background: var(--green); }
+  .s423 { background: var(--yellow); }
+  .s404 { background: var(--red); color: white; }
+
+  /* ── Divider ─────────────────────────────────────────────── */
+  hr { border: none; border-top: 2px solid var(--black); margin: 32px 0; }
+
+  /* ── Footer ──────────────────────────────────────────────── */
+  footer {
+    border-top: var(--border);
+    background: var(--black);
+    color: #555;
+    padding: 16px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 1px;
+  }
+  footer a { color: var(--yellow); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── Responsive ──────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    header { padding: 0 16px; }
+    .tab { padding: 12px 20px; font-size: 15px; letter-spacing: 2px; }
+    main { padding: 28px 16px 60px; }
+    footer { flex-direction: column; gap: 8px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="h-icon">⏳</div>
+  <div class="h-text">
+    <div class="h-title">TimeLock Vault</div>
+    <div class="h-sub">t.yourdomain.com — AES-256-GCM time-lock encryption</div>
+  </div>
+  <div class="h-right">
+    <a class="repo-btn" href="https://github.com/justadoll/AES_Time_Crypt" target="_blank" rel="noopener">
+      <svg height="13" width="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      justadoll/AES_Time_Crypt
+    </a>
+    <div class="authors">
+      made with <span style="color:#e94560;font-size:11px">❤️</span> by
+      <a href="https://github.com/justadoll" target="_blank" rel="noopener">@justadoll</a>
+      <span style="color:#333">&</span>
+      <a href="https://github.com/santiagz" target="_blank" rel="noopener">@santiagz</a>
+    </div>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active-enc" id="tab-enc" onclick="switchTab('enc')">🔒&nbsp; Encrypt</div>
+  <div class="tab" id="tab-dec" onclick="switchTab('dec')">🔓&nbsp; Decrypt</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  ENCRYPT PANEL                                             -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel-enc">
+<main>
+
+  <div class="banner b-warn">
+    <div class="banner-icon">⏳</div>
+    <p>Files encrypted here are <strong>sealed by time</strong>. The decryption key is held on the server and released <strong>only after the unlock date</strong> you specify. No bypass. No override.</p>
+  </div>
+
+  <!-- CURL -->
+  <div class="tag tag-enc">curl — quickest way</div>
+  <h2>Encrypt with curl</h2>
+  <p style="margin-bottom:14px">Send any file as the request body. Duration goes in the URL. Default is <strong>1month</strong>.</p>
+
+  <div class="card">
+    <div class="card-hd"><div class="dot dot-enc"></div>default — 1 month lock</div>
+    <div class="card-bd">
+      <div class="code code-enc" id="c1">
+        <button class="copy-btn" onclick="cp('c1')">copy</button>
+        <span class="cp">$ </span>curl -T <span class="ca">file.txt</span> <span class="ca">t.yourdomain.com/en</span> -o <span class="ca">file.txt.tlp</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="dot dot-enc"></div>custom duration</div>
+    <div class="card-bd">
+      <div class="code code-enc" id="c2">
+        <button class="copy-btn" onclick="cp('c2')">copy</button>
+        <span class="cp">$ </span>curl -T <span class="ca">secrets.pdf</span> <span class="ca">t.yourdomain.com/en/<span class="hl">1year</span></span> -o <span class="ca">secrets.pdf.tlp</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="dot dot-enc"></div>available durations</div>
+    <div class="card-bd">
+      <div class="dur-grid">
+        <div class="dur-chip">1h</div><div class="dur-chip">2h</div>
+        <div class="dur-chip">6h</div><div class="dur-chip">12h</div>
+        <div class="dur-chip">1d</div><div class="dur-chip">3d</div>
+        <div class="dur-chip">1week</div><div class="dur-chip">2weeks</div>
+        <div class="dur-chip star">1month ★</div>
+        <div class="dur-chip">3months</div><div class="dur-chip">6months</div>
+        <div class="dur-chip">1year</div>
+      </div>
+      <p style="margin-top:10px;font-size:11px;opacity:.5">★ default when no duration specified</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- CLI -->
+  <div class="tag tag-enc">Python CLI</div>
+  <h2>Encrypt with enc.py</h2>
+  <p style="margin-bottom:14px">No dependencies — pure Python stdlib.</p>
+
+  <div class="card">
+    <div class="card-hd"><div class="dot dot-enc"></div>usage</div>
+    <div class="card-bd">
+      <div class="code code-enc" id="c3">
+        <button class="copy-btn" onclick="cp('c3')">copy</button>
+        <span class="cm"># python enc.py &lt;file&gt; [duration] [--server URL]</span><br><br>
+        <span class="cp">$ </span>python enc.py <span class="ca">file.txt</span> <span class="cm">                         # 1month</span><br>
+        <span class="cp">$ </span>python enc.py <span class="ca">file.txt</span> <span class="cf">1year</span><br>
+        <span class="cp">$ </span>python enc.py <span class="ca">file.txt</span> <span class="cf">2weeks</span> --server <span class="ca">https://t.yourdomain.com</span>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- HOW IT WORKS -->
+  <div class="tag tag-enc">under the hood</div>
+  <h2>How encryption works</h2>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-hd"><div class="dot dot-enc"></div>step by step</div>
+    <div class="card-bd">
+      <ol class="steps steps-enc">
+        <li><span>Your file bytes arrive at the server over HTTPS</span></li>
+        <li><span>Server generates a fresh <code>AES-256-GCM</code> key + random 96-bit nonce</span></li>
+        <li><span>File is encrypted → ciphertext. Plaintext is immediately discarded from memory</span></li>
+        <li><span>Key is stored in the vault with your unlock timestamp. <strong>Only the key is stored</strong> — not your file</span></li>
+        <li><span>Response: a <code>.tlp</code> file containing <code>key_id</code> + ciphertext. This is what you keep</span></li>
+        <li><span>Server returns the key only after the unlock date — no exceptions, no admin override</span></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="banner b-info" style="margin-top:0">
+    <div class="banner-icon">💡</div>
+    <p>The <code style="font-size:11px;background:rgba(0,0,0,.07);padding:1px 4px">.tlp</code> file holds only ciphertext + a key reference ID. Even if someone intercepts your <code style="font-size:11px;background:rgba(0,0,0,.07);padding:1px 4px">.tlp</code>, they cannot decrypt it without the server releasing the key.</p>
+  </div>
+
+  <hr>
+
+  <!-- .TLP FORMAT -->
+  <div class="tag tag-enc">.tlp format</div>
+  <h2>What's inside a .tlp file</h2>
+  <div class="card" style="margin-top:14px">
+    <div class="card-hd"><div class="dot dot-enc"></div>json structure</div>
+    <div class="card-bd">
+      <div class="code code-enc" style="color:#e2e8f0">
+<span style="color:#888">{</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"v"</span><span style="color:#888">:</span>           <span style="color:#86efac">1</span><span style="color:#888">,</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"id"</span><span style="color:#888">:</span>          <span style="color:#fde68a">"r4nd0m_key_id"</span><span style="color:#888">,</span>  <span class="cm">// server-side key ref</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"unlock_at"</span><span style="color:#888">:</span>   <span style="color:#86efac">1798761600</span><span style="color:#888">,</span>      <span class="cm">// unix timestamp</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"unlock_iso"</span><span style="color:#888">:</span>  <span style="color:#fde68a">"2027-01-01T00:00:00+00:00"</span><span style="color:#888">,</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"original"</span><span style="color:#888">:</span>   <span style="color:#fde68a">"file.txt"</span><span style="color:#888">,</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"nonce"</span><span style="color:#888">:</span>      <span style="color:#fde68a">"base64..."</span><span style="color:#888">,</span>         <span class="cm">// AES-GCM nonce</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"ct"</span><span style="color:#888">:</span>         <span style="color:#fde68a">"base64..."</span><span style="color:#888">,</span>         <span class="cm">// ciphertext</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"_sig"</span><span style="color:#888">:</span>       <span style="color:#fde68a">"integrity_hash"</span>        <span class="cm">// tamper check</span><br>
+<span style="color:#888">}</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div><!-- /panel-enc -->
+
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  DECRYPT PANEL                                            -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-dec">
+<main>
+
+  <div class="banner b-warn">
+    <div class="banner-icon">🔑</div>
+    <p>Send your <strong>.tlp file</strong> here. If the unlock date has passed the server releases the key and returns your original file. If not — you get a <strong>countdown</strong> and HTTP <code style="font-size:11px;background:rgba(0,0,0,.07);padding:1px 4px">423 Locked</code>.</p>
+  </div>
+
+  <!-- CURL -->
+  <div class="tag tag-dec">curl — quickest way</div>
+  <h2>Decrypt with curl</h2>
+  <p style="margin-bottom:14px">Post your <code style="font-family:'Space Mono',monospace;font-size:11px;background:#f0f0dc;border:1px solid #ccc;padding:1px 4px">.tlp</code> file. Response is your original file or a JSON countdown.</p>
+
+  <div class="card">
+    <div class="card-hd"><div class="dot dot-dec"></div>basic decrypt</div>
+    <div class="card-bd">
+      <div class="code code-dec" id="d1">
+        <button class="copy-btn" onclick="cp('d1')">copy</button>
+        <span class="cp">$ </span>curl -T <span class="ca">file.txt.tlp</span> <span class="ca">t.yourdomain.com/de</span> -o <span class="ca">file.txt</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="dot dot-dec"></div>with status code check</div>
+    <div class="card-bd">
+      <div class="code code-dec" id="d2">
+        <button class="copy-btn" onclick="cp('d2')">copy</button>
+        <span class="cp">$ </span>curl -T <span class="ca">file.txt.tlp</span> <span class="ca">t.yourdomain.com/de</span> -o <span class="ca">file.txt</span> -w <span class="cf">"\nHTTP %{http_code}\n"</span>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- RESPONSES -->
+  <div class="tag tag-dec">server responses</div>
+  <h2>What the server returns</h2>
+
+  <div style="margin-top:14px">
+    <p style="margin-bottom:8px"><span class="http s200">200 OK</span> unlock date has passed — returns original file bytes</p>
+    <div class="resp">
+      <div class="resp-hd s200"><span>raw file bytes</span><span>Content-Disposition: attachment</span></div>
+      <div class="resp-body">&lt;binary file contents saved directly to disk&gt;</div>
+    </div>
+
+    <p style="margin:18px 0 8px"><span class="http s423">423 LOCKED</span> still locked — returns JSON countdown</p>
+    <div class="resp">
+      <div class="resp-hd s423"><span>application/json</span><span>HTTP 423</span></div>
+      <div class="resp-body">{<br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"error"</span>:            <span style="color:#fde68a">"🔒 Locked"</span>,<br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"message"</span>:          <span style="color:#fde68a">"This file unlocks in <span class="hl">47d 3h 22m</span>"</span>,<br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"unlock_iso"</span>:       <span style="color:#fde68a">"2026-03-15T00:00:00+00:00"</span>,<br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"remaining_seconds"</span>: <span style="color:#86efac">4079340</span>,<br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"remaining_human"</span>:   <span style="color:#fde68a">"47d 3h 22m"</span><br>
+}</div>
+    </div>
+
+    <p style="margin:18px 0 8px"><span class="http s404">404</span> key not found — server may have been reset</p>
+  </div>
+
+  <hr>
+
+  <!-- CLI -->
+  <div class="tag tag-dec">Python CLI</div>
+  <h2>Decrypt with dec.py</h2>
+  <p style="margin-bottom:14px">No dependencies — pure Python stdlib.</p>
+
+  <div class="card">
+    <div class="card-hd"><div class="dot dot-dec"></div>usage</div>
+    <div class="card-bd">
+      <div class="code code-dec" id="d3">
+        <button class="copy-btn" onclick="cp('d3')">copy</button>
+        <span class="cm"># python dec.py &lt;file.tlp&gt; [--output PATH] [--server URL]</span><br><br>
+        <span class="cp">$ </span>python dec.py <span class="ca">file.txt.tlp</span> <span class="cm">                       # saves as file.txt</span><br>
+        <span class="cp">$ </span>python dec.py <span class="ca">file.txt.tlp</span> --output <span class="ca">/tmp/result.txt</span><br>
+        <span class="cp">$ </span>python dec.py <span class="ca">file.txt.tlp</span> --server <span class="ca">https://t.yourdomain.com</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="dot dot-dec"></div>terminal output</div>
+    <div class="card-bd">
+      <p style="font-size:11px;opacity:.6;margin-bottom:7px">when locked:</p>
+      <div class="code code-dec" style="font-size:11px;margin:0 0 12px">
+        &nbsp;&nbsp;file       →  file.txt.tlp<br>
+        &nbsp;&nbsp;unlocks at →  2026-03-15 00:00 UTC<br><br>
+        <span class="er">✗  🔒 Locked<br>
+        &nbsp;&nbsp; This file unlocks in 47d 3h 22m</span>
+      </div>
+      <p style="font-size:11px;opacity:.6;margin-bottom:7px">when unlocked:</p>
+      <div class="code code-dec" style="font-size:11px;margin:0">
+        &nbsp;&nbsp;file       →  file.txt.tlp<br>
+        &nbsp;&nbsp;unlocks at →  2026-02-27 12:00 UTC<br><br>
+        <span class="hl-g">✓  Decrypted  →  file.txt</span>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- HOW IT WORKS -->
+  <div class="tag tag-dec">under the hood</div>
+  <h2>How decryption works</h2>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-hd"><div class="dot dot-dec"></div>step by step</div>
+    <div class="card-bd">
+      <ol class="steps steps-dec">
+        <li><span>Your <code>.tlp</code> file is sent to the server — contains a <code>key_id</code> and the ciphertext</span></li>
+        <li><span>Server verifies the <code>_sig</code> integrity field — rejects tampered files</span></li>
+        <li><span>Server checks current time against <code>unlock_at</code> timestamp</span></li>
+        <li><span>If locked → returns <code>HTTP 423</code> with countdown JSON. Request ends here</span></li>
+        <li><span>If unlocked → server looks up the AES-256 key by <code>key_id</code> from the vault</span></li>
+        <li><span>Ciphertext decrypted with <code>AES-256-GCM</code> → original file bytes returned</span></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="banner b-info">
+    <div class="banner-icon">⚠️</div>
+    <p><strong>Key persistence:</strong> Keys are stored indefinitely. If you self-host, ensure your <code style="font-size:11px;background:rgba(0,0,0,.07);padding:1px 4px">vault.db</code> is not deleted before your files need to be unlocked.</p>
+  </div>
+
+</main>
+</div><!-- /panel-dec -->
+
+<!-- FOOTER -->
+<footer>
+  <span>TimeLock Vault — t.yourdomain.com</span>
+  <span><a href="https://github.com/justadoll/AES_Time_Crypt" target="_blank" rel="noopener">github.com/justadoll/AES_Time_Crypt</a></span>
+</footer>
+
+<script>
+  // ── Tab switching ────────────────────────────────────────────
+  function switchTab(tab) {
+    const isEnc = tab === 'enc';
+
+    document.getElementById('panel-enc').classList.toggle('active', isEnc);
+    document.getElementById('panel-dec').classList.toggle('active', !isEnc);
+
+    const te = document.getElementById('tab-enc');
+    const td = document.getElementById('tab-dec');
+    te.className = 'tab' + (isEnc ? ' active-enc' : '');
+    td.className = 'tab' + (!isEnc ? ' active-dec' : '');
+
+    // Reflect in URL hash without scrolling
+    history.replaceState(null, '', '#' + tab);
+  }
+
+  // ── Restore tab from URL hash ────────────────────────────────
+  (function() {
+    const h = location.hash.replace('#', '');
+    if (h === 'dec') switchTab('dec');
+  })();
+
+  // ── Copy buttons ─────────────────────────────────────────────
+  function cp(id) {
+    const block = document.getElementById(id);
+    const text  = block.innerText.replace(/^COPY\n/, '').replace(/^\$ /gm, '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = block.querySelector('.copy-btn');
+      btn.textContent = 'copied!';
+      btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('ok'); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
