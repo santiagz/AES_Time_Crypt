@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimeLock — Encrypt</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #fffef0;
+    --yellow: #ffe400;
+    --red: #ff3b3b;
+    --blue: #1a1aff;
+    --border: 3px solid var(--black);
+    --shadow: 5px 5px 0 var(--black);
+    --shadow-lg: 8px 8px 0 var(--black);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--white);
+    color: var(--black);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── Header ──────────────────────────────── */
+  header {
+    background: var(--yellow);
+    border-bottom: var(--border);
+    padding: 0 40px;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .header-lock {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 6vw, 72px);
+    line-height: 1;
+    padding: 18px 28px 18px 0;
+    border-right: var(--border);
+    margin-right: 28px;
+    letter-spacing: 2px;
+  }
+
+  .header-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(30px, 4vw, 48px);
+    letter-spacing: 3px;
+    line-height: 1;
+  }
+
+  .header-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    opacity: 0.7;
+    text-transform: uppercase;
+  }
+
+  .header-badge {
+    margin-left: auto;
+    align-self: center;
+    background: var(--black);
+    color: var(--yellow);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border: 2px solid var(--black);
+  }
+
+  /* ── Layout ─────────────────────────────── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── Section header ─────────────────────── */
+  .section-tag {
+    display: inline-block;
+    background: var(--black);
+    color: var(--yellow);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    margin-bottom: 16px;
+  }
+
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 4vw, 44px);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+
+  p {
+    font-size: 15px;
+    line-height: 1.65;
+    color: #2a2a2a;
+  }
+
+  /* ── Cards ──────────────────────────────── */
+  .card {
+    border: var(--border);
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 28px;
+    background: var(--white);
+  }
+
+  .card-header {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-header .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--yellow);
+    flex-shrink: 0;
+  }
+
+  .card-body {
+    padding: 22px 22px 24px;
+  }
+
+  /* ── Code blocks ─────────────────────────── */
+  .code-block {
+    background: var(--black);
+    color: var(--yellow);
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 18px 20px;
+    border: var(--border);
+    box-shadow: var(--shadow);
+    margin: 12px 0;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .code-block .prompt {
+    color: #888;
+    user-select: none;
+  }
+
+  .code-block .cmd { color: var(--yellow); }
+  .code-block .arg { color: #b8e0ff; }
+  .code-block .flag { color: #ff9d4d; }
+  .code-block .comment {
+    color: #555;
+    font-size: 12px;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: #222;
+    color: #888;
+    border: 1px solid #444;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.1s;
+  }
+
+  .copy-btn:hover { background: var(--yellow); color: var(--black); border-color: var(--yellow); }
+  .copy-btn.copied { background: #10b981; color: white; border-color: #10b981; }
+
+  /* ── Duration table ─────────────────────── */
+  .dur-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .dur-chip {
+    border: 2px solid var(--black);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    padding: 8px 6px;
+    background: var(--white);
+    box-shadow: 3px 3px 0 var(--black);
+    transition: transform 0.1s, box-shadow 0.1s;
+    cursor: default;
+  }
+
+  .dur-chip:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--black);
+  }
+
+  .dur-chip.highlight { background: var(--yellow); }
+
+  /* ── How it works ───────────────────────── */
+  .steps {
+    counter-reset: step;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .steps li {
+    counter-increment: step;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .steps li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--yellow);
+    background: var(--black);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 1px;
+  }
+
+  .steps li span {
+    padding-top: 6px;
+    color: #2a2a2a;
+  }
+
+  .steps li code {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    background: #f0f0dc;
+    border: 1px solid #ccc;
+    padding: 1px 5px;
+  }
+
+  /* ── Warning banner ─────────────────────── */
+  .banner {
+    border: var(--border);
+    box-shadow: var(--shadow);
+    padding: 14px 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+
+  .banner.warn  { background: var(--yellow); }
+  .banner.info  { background: #d0f0ff; }
+
+  .banner-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+
+  .banner p { font-size: 13px; font-weight: 500; }
+
+  /* ── Footer ─────────────────────────────── */
+  footer {
+    border-top: var(--border);
+    background: var(--black);
+    color: var(--white);
+    padding: 18px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  footer a {
+    color: var(--yellow);
+    text-decoration: none;
+  }
+
+  footer a:hover { text-decoration: underline; }
+
+  /* ── Divider ─────────────────────────────── */
+  .divider {
+    border: none;
+    border-top: 2px solid var(--black);
+    margin: 36px 0;
+  }
+
+  /* ── Responsive ─────────────────────────── */
+  @media (max-width: 600px) {
+    header { padding: 0 16px; }
+    main { padding: 28px 16px 60px; }
+    footer { flex-direction: column; gap: 8px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-lock">🔒</div>
+  <div class="header-text">
+    <div class="header-title">TimeLock Vault</div>
+    <div class="header-sub">en.yourdomain.com — Encrypt Endpoint</div>
+  </div>
+  <div class="header-badge">AES-256-GCM</div>
+</header>
+
+<main>
+
+  <!-- BANNER -->
+  <div class="banner warn">
+    <div class="banner-icon">⏳</div>
+    <p>Files encrypted here are <strong>sealed by time</strong>. The decryption key is held on our server and released <strong>only after the unlock date</strong> you specify. No bypass. No override.</p>
+  </div>
+
+  <!-- CURL USAGE -->
+  <div class="section-tag">curl — quickest way</div>
+  <h2>Encrypt with curl</h2>
+  <p style="margin-bottom:16px">Send any file as the request body. The response is your encrypted <code style="font-family:'Space Mono',monospace;font-size:12px;background:#f0f0dc;border:1px solid #ccc;padding:1px 5px">.tlp</code> file.</p>
+
+  <div class="card">
+    <div class="card-header"><div class="dot"></div>DEFAULT — 1 month lock</div>
+    <div class="card-body">
+      <div class="code-block" id="curl1">
+        <button class="copy-btn" onclick="copyCode('curl1')">copy</button>
+        <span class="prompt">$ </span><span class="cmd">curl</span> <span class="flag">-T</span> <span class="arg">file.txt</span> <span class="arg">https://en.yourdomain.com/1month</span> <span class="flag">-o</span> <span class="arg">file.txt.tlp</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="dot"></div>CUSTOM duration in URL</div>
+    <div class="card-body">
+      <div class="code-block" id="curl2">
+        <button class="copy-btn" onclick="copyCode('curl2')">copy</button>
+        <span class="prompt">$ </span><span class="cmd">curl</span> <span class="flag">-T</span> <span class="arg">secrets.pdf</span> <span class="arg">https://en.yourdomain.com/<strong>1year</strong></span> <span class="flag">-o</span> <span class="arg">secrets.pdf.tlp</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="dot"></div>Available durations</div>
+    <div class="card-body">
+      <div class="dur-grid">
+        <div class="dur-chip">1h</div>
+        <div class="dur-chip">2h</div>
+        <div class="dur-chip">6h</div>
+        <div class="dur-chip">12h</div>
+        <div class="dur-chip">1d</div>
+        <div class="dur-chip">3d</div>
+        <div class="dur-chip">1week</div>
+        <div class="dur-chip">2weeks</div>
+        <div class="dur-chip highlight">1month ★</div>
+        <div class="dur-chip">3months</div>
+        <div class="dur-chip">6months</div>
+        <div class="dur-chip">1year</div>
+      </div>
+      <p style="margin-top:12px;font-size:12px;opacity:0.6">★ Default when no duration specified</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- CLI USAGE -->
+  <div class="section-tag">Python CLI — for power users</div>
+  <h2>Encrypt with enc.py</h2>
+  <p style="margin-bottom:16px">Download <code style="font-family:'Space Mono',monospace;font-size:12px;background:#f0f0dc;border:1px solid #ccc;padding:1px 5px">enc.py</code> from the repo. No dependencies — pure Python stdlib.</p>
+
+  <div class="card">
+    <div class="card-header"><div class="dot"></div>CLI syntax</div>
+    <div class="card-body">
+      <div class="code-block" id="cli1">
+        <button class="copy-btn" onclick="copyCode('cli1')">copy</button>
+        <span class="comment"># python enc.py &lt;file&gt; [duration] [--server URL]</span><br><br>
+        <span class="prompt">$ </span><span class="cmd">python</span> <span class="arg">enc.py</span> <span class="arg">file.txt</span>
+        <span class="comment">               # 1month default</span><br>
+        <span class="prompt">$ </span><span class="cmd">python</span> <span class="arg">enc.py</span> <span class="arg">file.txt</span> <span class="flag">1year</span><br>
+        <span class="prompt">$ </span><span class="cmd">python</span> <span class="arg">enc.py</span> <span class="arg">file.txt</span> <span class="flag">2weeks</span> <span class="flag">--server</span> <span class="arg">https://en.yourdomain.com</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- HOW IT WORKS -->
+  <div class="section-tag">Under the hood</div>
+  <h2>How encryption works</h2>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-header"><div class="dot"></div>Step by step</div>
+    <div class="card-body">
+      <ol class="steps">
+        <li><span>Your file bytes arrive at the server over HTTPS</span></li>
+        <li><span>Server generates a fresh <code>AES-256-GCM</code> key + random 96-bit nonce</span></li>
+        <li><span>File is encrypted → ciphertext. Plaintext is immediately discarded from memory</span></li>
+        <li><span>Key is stored in the vault with your unlock timestamp. <strong>Only the key is stored</strong> — not your file</span></li>
+        <li><span>Response: a <code>.tlp</code> file containing <code>key_id</code> + ciphertext. This is what you keep</span></li>
+        <li><span>Server sets the key free only after the unlock date — no exceptions, no admin override</span></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="banner info" style="margin-top:8px">
+    <div class="banner-icon">💡</div>
+    <p>The <code style="font-size:12px;background:rgba(0,0,0,0.08);padding:1px 4px">.tlp</code> file contains only the ciphertext and a key reference ID. Even if someone gets your <code style="font-size:12px;background:rgba(0,0,0,0.08);padding:1px 4px">.tlp</code> file, they cannot decrypt it without the server releasing the key.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- .TLP FORMAT -->
+  <div class="section-tag">.tlp file format</div>
+  <h2>What's inside a .tlp file</h2>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-header"><div class="dot"></div>JSON structure</div>
+    <div class="card-body">
+      <div class="code-block" style="color:#e2e8f0">
+<span style="color:#888">{</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"v"</span><span style="color:#888">:</span>          <span style="color:#86efac">1</span><span style="color:#888">,</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"id"</span><span style="color:#888">:</span>         <span style="color:#fde68a">"r4nd0m_key_id"</span><span style="color:#888">,</span>  <span style="color:#555">// key reference (server-side)</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"unlock_at"</span><span style="color:#888">:</span>  <span style="color:#86efac">1798761600</span><span style="color:#888">,</span>      <span style="color:#555">// unix timestamp</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"original"</span><span style="color:#888">:</span>  <span style="color:#fde68a">"file.txt"</span><span style="color:#888">,</span>          <span style="color:#555">// original filename</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"nonce"</span><span style="color:#888">:</span>     <span style="color:#fde68a">"base64..."</span><span style="color:#888">,</span>         <span style="color:#555">// AES-GCM nonce</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"ct"</span><span style="color:#888">:</span>        <span style="color:#fde68a">"base64..."</span><span style="color:#888">,</span>         <span style="color:#555">// encrypted ciphertext</span><br>
+&nbsp;&nbsp;<span style="color:#7dd3fc">"_sig"</span><span style="color:#888">:</span>      <span style="color:#fde68a">"integrity_hash"</span>        <span style="color:#555">// tamper check</span><br>
+<span style="color:#888">}</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <span>TimeLock Vault — en.yourdomain.com</span>
+  <span>→ <a href="https://de.yourdomain.com">de.yourdomain.com</a> to decrypt</span>
+</footer>
+
+<script>
+function copyCode(id) {
+  const block = document.getElementById(id);
+  const text = block.innerText.replace(/^copy\n/, '').replace(/\$ /g, '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = block.querySelector('.copy-btn');
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
