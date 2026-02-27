@@ -17,7 +17,7 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     depends_on:
-      - app
+      - aes_tc_app
     ports:
       - "8065:80"
     volumes:
