@@ -11,13 +11,13 @@ The decryption key lives on the server and is **released only after the unlock d
 
 ```bash
 # encrypt — default 1month
-curl -T file.txt https://t.rt0.me/en -o file.txt.tlp
+curl -T file.txt t.rt0.me/en -o file.txt.tlp
 
 # encrypt — custom duration
-curl -T file.txt https://t.rt0.me/en/1year -o file.txt.tlp
+curl -T file.txt t.rt0.me/en/1year -o file.txt.tlp
 
 # decrypt
-curl -T file.txt.tlp https://t.rt0.me/de -o file.txt
+curl -T file.txt.tlp t.rt0.me/de -o file.txt
 ```
 
 ### CLI
@@ -25,10 +25,10 @@ curl -T file.txt.tlp https://t.rt0.me/de -o file.txt
 ```bash
 python enc.py file.txt                                    # 1month default
 python enc.py file.txt 1year
-python enc.py file.txt 2weeks --server https://t.rt0.me
+python enc.py file.txt 2weeks --server https://domain.com
 
 python dec.py file.txt.tlp
-python dec.py file.txt.tlp --server https://t.rt0.me
+python dec.py file.txt.tlp --server https://domain.com
 ```
 
 ---
