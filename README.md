@@ -10,29 +10,30 @@ The decryption key lives on the server and is **released only after the unlock d
 ### curl
 
 ```bash
-# encrypt
-curl -T file.txt en.rt0.me/1year -o file.txt.tlp
+# encrypt — default 1month
+curl -T file.txt https://t.rt0.me/en -o file.txt.tlp
 
-# decrypt  (just the subdomain, no path needed)
-curl -T file.txt.tlp de.rt0.me -o file.txt
+# encrypt — custom duration
+curl -T file.txt https://t.rt0.me/en/1year -o file.txt.tlp
+
+# decrypt
+curl -T file.txt.tlp https://t.rt0.me/de -o file.txt
 ```
 
 ### CLI
 
 ```bash
-python enc.py file.txt           # 1month default
+python enc.py file.txt                                    # 1month default
 python enc.py file.txt 1year
-python enc.py file.txt 2weeks --server https://en.yourdomain.com
+python enc.py file.txt 2weeks --server https://t.rt0.me
 
 python dec.py file.txt.tlp
-python dec.py file.txt.tlp --server https://de.yourdomain.com
+python dec.py file.txt.tlp --server https://t.rt0.me
 ```
 
 ---
 
 ## Available Durations
-
-★ Default when no duration specified
 
 | Token     | Duration    |
 |-----------|-------------|
@@ -49,81 +50,85 @@ python dec.py file.txt.tlp --server https://de.yourdomain.com
 | `6months` | 180 days    |
 | `1year`   | 365 days    |
 
+★ Default when no duration specified
+
 ---
 
-## Deploy Self-Host
+## Deploy
 
 ### 1. Clone & configure
 
-Edit `.env` - set a long random `SERVER_SECRET`:
 ```bash
 cp .env.example .env
-```
-
-Edit server name in `nginx.conf`:
-```nginx
-server_name en.yourdomain.com;
-
-...
-
-server_name de.yourdomain.com;
-```
-
-Edit html files `enctypt.html` and `dectypt.html`
-
-Ctrl+F in files for `yourdomain.com` and replace to your FQDN
-
-Example:
-```html
-<span>TimeLock Vault — de.yourdomain.com</span>
+# edit .env — set a long random SERVER_SECRET
 ```
 
 ### 2. Point your DNS
 
 ```
-en.yourdomain.com  →  your server IP
-de.yourdomain.com  →  your server IP
+t.yourdomain.com  →  your server IP
 ```
 
-### 3. Run
+### 3. Configure your domain
+
+Edit `nginx/nginx.conf` — replace `t.yourdomain.com` with your FQDN:
+
+```nginx
+server_name t.yourdomain.com;
+```
+
+Edit `web/index.html` — Ctrl+F `t.yourdomain.com` and replace with your FQDN.
+
+### 4. Run
 
 ```bash
 docker compose up -d
 ```
 
-That's it. Nginx routes by subdomain:
+Routes:
 
 ```
-GET  en.yourdomain.com/        →  encrypt instruction page
-PUT  en.yourdomain.com/1year   →  FastApi /1year  (encrypt)
+GET  t.yourdomain.com/en            →  instruction page (encrypt tab)
+PUT  t.yourdomain.com/en            →  encrypt, default 1month
+PUT  t.yourdomain.com/en/1year      →  encrypt with duration
+PUT  t.yourdomain.com/en/1year/f    →  encrypt (curl -T appends filename)
 
-GET  de.yourdomain.com/        →  decrypt instruction page
-PUT  de.yourdomain.com/        →  FastApi /decrypt  (nginx rewrites internally)
+GET  t.yourdomain.com/de            →  instruction page (decrypt tab)
+PUT  t.yourdomain.com/de            →  decrypt
+PUT  t.yourdomain.com/de/f.tlp      →  decrypt (curl -T appends filename)
+```
+
+### 5. HTTPS (Let's Encrypt)
+
+Uncomment the `certbot` block in `docker-compose.yml`, fill in your email, then:
+
+```bash
+docker compose run --rm certbot
+docker compose restart nginx
 ```
 
 ---
 
 ## API Reference
 
-### `POST /encrypt[/<duration>]`
+### `PUT /en[/<duration>]`
 
 Encrypt a file and store its key in the vault.
 
 **Request:**
 - Body: raw file bytes
-- Header `X-Filename`: original filename (optional, default: `"file"`)
-- Header `Content-Type`: `application/octet-stream`
+- Header `X-Filename`: original filename (optional, default: inferred from URL or `"file"`)
 
-**Response:** `.tlp` file (JSON, saved to disk)
+**Response:** `.tlp` file (JSON blob)
 
 **Response headers:**
 - `X-Unlock-At`: unix timestamp
 - `X-Unlock-ISO`: ISO 8601 datetime
-- `X-Lock-Duration`: duration token used
+- `X-Duration`: duration token used
 
 ---
 
-### `POST /decrypt`
+### `PUT /de`
 
 Attempt to decrypt a `.tlp` file.
 
@@ -132,13 +137,13 @@ Attempt to decrypt a `.tlp` file.
 
 **Responses:**
 
-| Code | Meaning |
-|------|---------|
-| `200` | Decrypted — body is original file bytes |
-| `423` | Locked — body is JSON countdown |
-| `400` | Malformed .tlp file |
-| `403` | Integrity check failed (tampered file) |
-| `404` | Key not found (server reset?) |
+| Code  | Meaning                                  |
+|-------|------------------------------------------|
+| `200` | Decrypted — body is original file bytes  |
+| `423` | Locked — body is JSON countdown          |
+| `400` | Malformed `.tlp` file                    |
+| `403` | Integrity check failed (tampered file)   |
+| `404` | Key not found (server reset?)            |
 
 **423 JSON body:**
 ```json
@@ -169,15 +174,14 @@ Attempt to decrypt a `.tlp` file.
 }
 ```
 
-The `.tlp` file contains **only the ciphertext** and a key reference.
-The actual AES key lives only on the server.
+The `.tlp` file contains **only the ciphertext** and a key reference ID.
+The actual AES-256 key lives only on the server.
 
 ---
 
 ## Security Notes
 
-- Keys are stored in SQLite on the server. Back it up.
-- `SERVER_SECRET` must be kept secret and stable — it signs all .tlp files.
-- The server sees plaintext briefly during encryption (over HTTPS).
-- For ultra-high security, run your own server so you control the key vault.
-- Keys are stored indefinitely — do not delete `vault.db` before files are unlocked.
+- Keys are stored in SQLite on the server — back it up, don't delete `vault.db` before files unlock.
+- `SERVER_SECRET` signs all `.tlp` files — set it once, never change it.
+- The server sees plaintext briefly during encryption (in memory, over HTTPS).
+- For maximum security, self-host so you control the key vault entirely.
